@@ -9,9 +9,13 @@
 #include <codecvt>  // Para std::wstring_convert
 #include <iomanip>  // Para std::setfill y std::setw
 #include <sstream>
-
+#include <fstream> //para guardar en csv
+#include <ctime> //para guardar la hora
+#include <chrono> //para obtener la hora actual
 
 using namespace std;
+
+int CONST PuntosPorClase = 3;
 
 // ==============================================================================
 // POSICIONAMIENTO DEL PORTATIL =================================================
@@ -57,7 +61,60 @@ void WlanNotificationCallback (PWLAN_NOTIFICATION_DATA unnamedParam1, PVOID unna
     }
 }
 
-list<CWifiAccessPoint> WifiAcccessPoints()
+string GuardarHora() {
+
+    auto now = chrono::system_clock::now();
+    time_t time_now = chrono::system_clock::to_time_t(now);
+
+
+    tm time_info;
+    localtime_s(&time_info, &time_now);
+    ostringstream timeStream;
+    timeStream << put_time(&time_info, "%H:%M:%S");
+
+    return timeStream.str();
+}
+
+void GuardarEnCSV(const list<CWifiAccessPoint>& listaWifis, string aula, int posicionAula, const string& filename) {
+    
+    ifstream fileRead(filename); //primero abrimos el fichero en modo lectura para ver si existe y en tal caso si esta vacio
+
+    bool fileEmpty = true;
+
+    if (fileRead.is_open()) { //miramos si existe
+         fileEmpty = fileRead.peek() == ifstream::traits_type::eof(); //miramos si esta vacio
+         fileRead.close();
+    }
+    else
+        cout << "\n" << "El archivo no existe, se creara." << "\n";
+
+    ofstream file; //abrimos archivo
+    file.open(filename, ios_base::app); //app (append) para no sobreescribir
+
+    if (fileEmpty) { //si el archivo esta vacio ponemos los nombres a las columnas
+        file << "Aula,Posición Aula,SSID,BSSID,Intensity,Quality,Hora\n";
+    }
+
+    string horaActual = GuardarHora(); //funcion obtener hora
+
+    wstring_convert<codecvt_utf8_utf16<wchar_t>> converter; //para pasar los valores de wstring a string
+
+    for (const auto& lw : listaWifis) { //recorremos las wifis encontradas
+        
+        string ssid_utf8 = converter.to_bytes(lw.m_SSID);
+        string bssid_utf8 = converter.to_bytes(lw.m_BSSID);
+
+        if (ssid_utf8.length() == 0)
+            ssid_utf8 = "RedOculta";
+
+        //añadimos al documento
+        file << aula << "," << posicionAula << "," << ssid_utf8 << "," << bssid_utf8 << "," << lw.m_Intensity << "," << lw.m_Quality << "," << horaActual << "\n";
+    }
+
+    file.close();
+}
+
+list<CWifiAccessPoint> ObtenerWifis()
 {
     HANDLE hClient = NULL;
     DWORD dwMaxClient = 2;   //    
@@ -197,7 +254,34 @@ list<CWifiAccessPoint> WifiAcccessPoints()
 
 int main() {
     
-    list<CWifiAccessPoint> lista = WifiAcccessPoints();
+    string aula;
+
+    cout << "En que clase estas?" << "\n";
+    cin >> aula;
+    cout << "\n";
+
+    cin.ignore();
+
+    for (int i = 1; i < PuntosPorClase + 1; i++) { //bucle que se repitre para cada punto que queremoms registrar
+        
+        cout << "Estas en el punto " << i << "?" << "\n";
+        cout << "Pulsa Enter para registrar las redes cercanas.";
+
+        
+        cin.get();
+        //system("pause");
+
+        //obtenemos las redes que detectamos
+        cout << "Registrando wifis" << "\n";
+        list<CWifiAccessPoint> listaWifis = ObtenerWifis();
+
+        cout << "Guardando las redes" << "\n";
+        GuardarEnCSV(listaWifis, aula, i, "infoWifis.csv");
+
+        cout << "\n";
+    }
+
+    cout << "Se ha registrado todo correctamente";
 
     return 0;
 }
