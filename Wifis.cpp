@@ -15,7 +15,8 @@
 
 using namespace std;
 
-int CONST PuntosPorClase = 3;
+int CONST PuntosPorClase = 5;
+string CONST nombreFichero = "BDwifis.csv";
 
 // ==============================================================================
 // POSICIONAMIENTO DEL PORTATIL =================================================
@@ -95,7 +96,7 @@ void GuardarEnCSV(const list<CWifiAccessPoint>& listaWifis, string aula, int pos
         file << "Aula,Posición Aula,SSID,BSSID,Intensity,Quality,Hora\n";
     }
 
-    string horaActual = GuardarHora(); //funcion obtener hora
+    //string horaActual = GuardarHora(); //funcion obtener hora
 
     wstring_convert<codecvt_utf8_utf16<wchar_t>> converter; //para pasar los valores de wstring a string
 
@@ -108,7 +109,8 @@ void GuardarEnCSV(const list<CWifiAccessPoint>& listaWifis, string aula, int pos
             ssid_utf8 = "RedOculta";
 
         //añadimos al documento
-        file << aula << "," << posicionAula << "," << ssid_utf8 << "," << bssid_utf8 << "," << lw.m_Intensity << "," << lw.m_Quality << "," << horaActual << "\n";
+        file << aula << "," << ssid_utf8 << "," << bssid_utf8 << "," << lw.m_Intensity << "," << lw.m_Quality << "\n";
+        //file << aula << "," << posicionAula << "," << ssid_utf8 << "," << bssid_utf8 << "," << lw.m_Intensity << "," << lw.m_Quality << "," << horaActual << "\n";
     }
 
     file.close();
@@ -276,7 +278,7 @@ int main() {
         list<CWifiAccessPoint> listaWifis = ObtenerWifis();
 
         cout << "Guardando las redes" << "\n";
-        GuardarEnCSV(listaWifis, aula, i, "infoWifis.csv");
+        GuardarEnCSV(listaWifis, aula, i, nombreFichero);
 
         cout << "\n";
     }
